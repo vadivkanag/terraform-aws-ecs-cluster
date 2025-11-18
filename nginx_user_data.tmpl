@@ -1,0 +1,21 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - aws-cli
+  - awslogs
+  - ca-certificates
+
+runcmd:
+  - mkdir -p /etc/nginx/ssl/
+  - aws s3 sync s3://${infra_config_bucket}/nginx/ssl/ /etc/nginx/ssl/ --region ${region}
+  - aws s3 cp s3://${infra_config_bucket}/nginx.conf /etc/nginx/ --region ${region}
+  - mkdir -p /etc/nginx/conf.d/http/upstreams/ && echo "" > /etc/nginx/conf.d/http/upstreams/default.conf
+  - aws s3 cp s3://${infra_config_bucket}/nginx.conf.d/http/upstreams/ /etc/nginx/conf.d/http/upstreams/*.conf --region ${region}
+  - mkdir -p /etc/nginx/conf.d/http/server/locations/ && echo "" > /etc/nginx/conf.d/http/server/locations/default.conf
+  - aws s3 cp s3://${infra_config_bucket}/nginx.conf.d/http/server/locations/ /etc/nginx/conf.d/http/server/locations/*.conf --region ${region}
+  - aws s3 sync s3://${infra_config_bucket}/nginx.conf.d /etc/nginx/conf.d/ --region ${region}
+  - nginx -s reload
+  - systemctl enable nginx
+  - systemctl start nginx
